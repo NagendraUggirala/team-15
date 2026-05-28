@@ -1,121 +1,114 @@
 import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
+import { BrowserRouter, Routes, Route, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import Header from './components/Header'
+import Footer from './components/Footer'
+import LandingPage from './components/LandingPage'
+import SignIn from './components/SignIn'
+import SignUp from './components/SignUp'
+import Dashboard from './components/Dashboard'
 import './App.css'
 
-function App() {
-  const [count, setCount] = useState(0)
+// 🏛️ Layout Component: Renders the Navbar, dynamic Route content, and Footer
+function Layout({ user, handleLogout, prepopulatedEmail, setPrepopulatedEmail, alerts, removeAlert, triggerAlert }) {
+  const location = useLocation()
+  
+  // Clean modern UX: Hide footer on Sign In and Sign Up pages for high conversion
+  const showFooter = location.pathname !== '/signin' && location.pathname !== '/signup'
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
+    <div id="app-container">
+      {/* Background radial glow layers */}
+      <div className="glow-backdrop-1"></div>
+      <div className="glow-backdrop-2"></div>
+
+      {/* Global Toast Alert notifications */}
+      <div className="toast-container">
+        {alerts.map((alert) => (
+          <div key={alert.id} className={`toast ${alert.type}`}>
+            <span style={{ fontSize: '1.1rem' }}>
+              {alert.type === 'success' ? '✓' : alert.type === 'error' ? '✕' : 'ℹ'}
+            </span>
+            <p>{alert.message}</p>
+            <button className="toast-close" onClick={() => removeAlert(alert.id)}>
+              ✕
+            </button>
+          </div>
+        ))}
+      </div>
+
+      {/* Sticky Top Header Navigation */}
+      <Header user={user} onLogout={handleLogout} />
+
+      {/* Main Outlet: Active Route component gets rendered here dynamically */}
+      <main style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+        <Outlet context={{ user, handleLogout, prepopulatedEmail, setPrepopulatedEmail, triggerAlert }} />
+      </main>
+
+      {/* Structured Footer */}
+      {showFooter && <Footer />}
+    </div>
+  )
+}
+
+function App() {
+  const [user, setUser] = useState(null)
+  const [prepopulatedEmail, setPrepopulatedEmail] = useState('')
+  const [alerts, setAlerts] = useState([])
+
+  // Global toaster notifications
+  const triggerAlert = (message, type = 'info') => {
+    const id = Date.now() + Math.random().toString(36).substr(2, 9)
+    const newAlert = { id, message, type }
+    
+    setAlerts((prev) => [...prev, newAlert])
+    
+    setTimeout(() => {
+      setAlerts((prev) => prev.filter((alert) => alert.id !== id))
+    }, 4000)
+  }
+
+  const removeAlert = (id) => {
+    setAlerts((prev) => prev.filter((alert) => alert.id !== id))
+  }
+
+  // Handle successful logins & register redirects
+  const handleLoginSuccess = (userData, navigate) => {
+    setUser(userData)
+    navigate('/dashboard')
+  }
+
+  const handleLogout = (navigate) => {
+    setUser(null)
+    navigate('/')
+    triggerAlert('Logged out of AURA session securely.', 'info')
+  }
+
+  return (
+    <BrowserRouter>
+      <Routes>
+        {/* Parent Layout route wrapping all children paths */}
+        <Route 
+          path="/" 
+          element={
+            <Layout 
+              user={user} 
+              handleLogout={handleLogout}
+              prepopulatedEmail={prepopulatedEmail}
+              setPrepopulatedEmail={setPrepopulatedEmail}
+              alerts={alerts}
+              removeAlert={removeAlert}
+              triggerAlert={triggerAlert}
+            />
+          }
         >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+          {/* Sub-routes injected inside <Outlet /> */}
+          <Route index element={<LandingPage />} />
+          <Route path="signin" element={<SignIn onLogin={handleLoginSuccess} />} />
+          <Route path="signup" element={<SignUp onLogin={handleLoginSuccess} />} />
+          <Route path="dashboard" element={<Dashboard />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
   )
 }
 
